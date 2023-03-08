@@ -9,8 +9,10 @@ extends CharacterBody3D
 @export var deaccel: float = 1.0 			# Abbremsen des Spielers
 @export var jump_velocity: float = 4.5	# Sprunghöhe
 @export var mouse_sensivity: float =  0.25	# Geschwindigkeit der Mausdrehung
-@export var invert_mouse_y := false
-@export var invert_mouse_x := false
+@export var invert_mouse_y := false # Y-Achse invertieren
+@export var invert_mouse_x := false # X-Achse invertieren
+@export var step_height := 0.25 # Wie hoch sind die stufen die bestiegen werden sollen
+@export var step_raylength := 0.5 # Wie weit voraus soll nach stufen geschaut werden
 #@export var gravity_vector :Vector3 = Vector3(0.0, -1.0, 0.0)	# Richtung der Gravitation
 
 @export var camera : Camera3D
@@ -19,10 +21,14 @@ var mouse_captured := false	# Merkt sich ob die Maus gefangen ist
 const min_camRotX := -PI/2	# kleinster Winkel in radians bis zu dem man nach unten sehen kann
 const max_camRotX := PI/2	# größter Winkel in radians bis zu dem man nach oben sehen kann
 var direction := Vector3.ZERO	# Tasten Bewegungs Richtung
+var input_vector := Vector2.ZERO # Eingabe vektor
 
 
 # Gravitation von den Projekt Einstellungen laden damit diese mit den RigidBody Nodes synchron ist.
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
+
+@onready var bottom_step_ray := RayCast3D.new() # unterer stufen ray
+@onready var top_step_ray := RayCast3D.new() # oberer stufen ray
 
 
 # Tastatur Eingabe Festlegen
@@ -63,6 +69,19 @@ func _set_inputs():
 		InputMap.action_add_event("switchmode", new_switchmode)
 
 
+func _setup_step_rays():
+	# Setze den unteren ray knapp über den boden
+	bottom_step_ray.position.y += 0.01
+	top_step_ray.position.y = bottom_step_ray.position.y + step_height
+	
+	# Lasse beide Rays in die selbe richtung schauen
+	bottom_step_ray.target_position = Vector3(0, 0, -step_raylength)
+	top_step_ray.target_position = Vector3(0, 0, -step_raylength)
+	
+	add_child(bottom_step_ray)
+	add_child(top_step_ray)
+
+
 # Beim Start ausführen
 func _ready() -> void:
 	if camera == null:
@@ -70,6 +89,8 @@ func _ready() -> void:
 		for child in get_children():
 			if child is Camera3D:
 				camera = child
+	
+	_setup_step_rays()
 	
 	# Tastenzuordnung festlegen
 	_set_inputs()
@@ -93,17 +114,21 @@ func _process(delta) -> void:
 	# Maus Fang Modus umschalten
 	if Input.is_action_just_pressed("switchmode"):
 		capture_mouse()
-		
+	
 	if !mouse_captured:
 		return
 
 	# Bewegungsrichtung bestimmen
-	var input_vector = Input.get_vector("move_left", "move_right", "move_back", "move_foreward")
+	input_vector = Input.get_vector("move_left", "move_right", "move_back", "move_foreward")
 	# Richtung Normalisieren, so dass in alle Richtungen die Geschwindigkeit konstant ist
 	direction = (global_transform.basis.x * input_vector.x + -global_transform.basis.z * input_vector.y).normalized()
 
 
 func _physics_process(delta) -> void:
+	if input_vector.y > 0 and bottom_step_ray.is_colliding() and !top_step_ray.is_colliding():
+		# kraft, die nur etwas größer als schwerkraft ist um spieler anzuheben
+		velocity.y += gravity * delta + 0.1
+	
 	# Gravitation berücksichtigen
 	if not is_on_floor():
 		velocity.y -= gravity * delta
