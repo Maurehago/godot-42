@@ -16,7 +16,7 @@ extends CharacterBody3D
 @export var invert_mouse_x := false # X-Achse invertieren
 @export_group("Step")
 @export var step_height := 0.25 # Wie hoch sind die stufen die bestiegen werden sollen
-@export var step_raylength := 0.3 # Wie weit voraus soll nach stufen geschaut werden
+@export var step_raylength := 1 # Wie weit voraus soll nach stufen geschaut werden
 @export var num_step_ray_directions := 4
 
 var mouse_captured := false	# Merkt sich ob die Maus gefangen ist
@@ -143,16 +143,19 @@ func _process(delta) -> void:
 
 
 func _physics_process(delta) -> void:
-	if input_vector != Vector2.ZERO and check_ray_collision():
-		# kraft, die nur etwas größer als schwerkraft ist um spieler anzuheben
-		velocity.y += gravity * delta + 0.1
+	var treppe:bool = check_ray_collision()
+	if is_on_floor():
+		if input_vector != Vector2.ZERO and treppe:
+			# kraft, die nur etwas größer als schwerkraft ist um spieler anzuheben
+			velocity.y += 10 * delta #gravity * delta + 0.1
+
+		# Springen
+		if Input.is_action_just_pressed("move_jump"):
+			velocity.y += jump_velocity
 	
 	# Gravitation berücksichtigen
-	if not is_on_floor():
+	elif !treppe:
 		velocity.y -= gravity * delta
-	# Springen
-	elif Input.is_action_just_pressed("move_jump"):
-		velocity.y += jump_velocity
 	
 	var accel_to_use = accel if direction != Vector3.ZERO else deaccel
 	velocity = velocity.move_toward(Vector3(max_speed, velocity.y, max_speed) * Vector3(direction.x, 1, direction.z), accel_to_use)
