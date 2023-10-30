@@ -16,20 +16,24 @@ extends CharacterBody3D
 @export var invert_mouse_x := false # X-Achse invertieren
 @export_group("Step")
 @export var step_height := 0.25 # Wie hoch sind die stufen die bestiegen werden sollen
-@export var step_raylength := 1 # Wie weit voraus soll nach stufen geschaut werden
-@export var num_step_ray_directions := 4
+#@export var step_raylength := 1 # Wie weit voraus soll nach stufen geschaut werden
+#@export var num_step_ray_directions := 4
 
 var mouse_captured := false	# Merkt sich ob die Maus gefangen ist
 const min_camRotX := -PI/2	# kleinster Winkel in radians bis zu dem man nach unten sehen kann
 const max_camRotX := PI/2	# größter Winkel in radians bis zu dem man nach oben sehen kann
 var direction := Vector3.ZERO	# Tasten Bewegungs Richtung
 var input_vector := Vector2.ZERO # Eingabe vektor
-var bottom_step_rays : Array[RayCast3D] = []
-var top_step_rays : Array[RayCast3D] = []
+#var bottom_step_rays : Array[RayCast3D] = []
+#var top_step_rays : Array[RayCast3D] = []
+var step_ray:RayCast3D
+var step_move:float = 0.0
+var is_jump:bool = false
 
 # Gravitation von den Projekt Einstellungen laden damit diese mit den RigidBody Nodes synchron ist.
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 
+var testy:MeshInstance3D
 
 # Tastatur Eingabe Festlegen
 func _set_inputs():
@@ -70,45 +74,63 @@ func _set_inputs():
 
 
 func _setup_step_rays() -> void:
-	var step := deg_to_rad(360) / num_step_ray_directions
-	for i in range(num_step_ray_directions):
-		var bottom_step_ray := RayCast3D.new()
-		# Setze den unteren ray knapp über den boden
-		bottom_step_ray.position.y += 0.01
-		
-		var top_step_ray := RayCast3D.new()
-		top_step_ray.position.y = bottom_step_ray.position.y + step_height
-		
-		# Lasse beide Rays in die selbe richtung schauen
-		bottom_step_ray.target_position = Vector3(0, 0, -step_raylength).rotated(Vector3.UP, i * step)
-		top_step_ray.target_position = Vector3(0, 0, -step_raylength).rotated(Vector3.UP, i * step)
-		
-		bottom_step_rays.append(bottom_step_ray)
-		top_step_rays.append(top_step_ray)
-		add_child(bottom_step_ray)
-		add_child(top_step_ray)
+#	var step := deg_to_rad(360) / num_step_ray_directions
+#	for i in range(num_step_ray_directions):
+#		var bottom_step_ray := RayCast3D.new()
+#		# Setze den unteren ray knapp über den boden
+#		bottom_step_ray.position.y += 0.01
+#
+#		var top_step_ray := RayCast3D.new()
+#		top_step_ray.position.y = bottom_step_ray.position.y + step_height
+#
+#		# Lasse beide Rays in die selbe richtung schauen
+#		bottom_step_ray.target_position = Vector3(0, 0, -step_raylength).rotated(Vector3.UP, i * step)
+#		top_step_ray.target_position = Vector3(0, 0, -step_raylength).rotated(Vector3.UP, i * step)
+#
+#		bottom_step_rays.append(bottom_step_ray)
+#		top_step_rays.append(top_step_ray)
+#		add_child(bottom_step_ray)
+#		add_child(top_step_ray)
+	pass
 
+func _setup_step_ray() -> void:
+	step_ray = RayCast3D.new()
+	step_ray.position.y = step_height + 0.01
+	testy.position.y = step_height + 0.01
+	step_ray.target_position = Vector3(0, -step_height, 0)
+	add_child(step_ray)
+	
 
 
 func check_ray_collision() -> bool:
-	#	if input_vector.y > 0 and bottom_step_ray.is_colliding() and bottom_step_ray.get_collision_normal().y == 0 and !top_step_ray.is_colliding():
-	for i in range(bottom_step_rays.size()):
-		var bottom_step_ray := bottom_step_rays[i]
-		var top_step_ray := top_step_rays[i]
-		if bottom_step_ray.is_colliding() and bottom_step_ray.get_collision_normal().y == 0 and !top_step_ray.is_colliding():
+	#print("ray_pos: ", step_ray.global_position)
+	if step_ray.is_colliding():
+		var n = step_ray.get_collision_normal().y
+		#print("step Normal: ", n)
+		if n >= 0.9 and n <= 1:
+			step_move = step_ray.global_position.y - step_ray.get_collision_point().y
 			return true
+			
+	#	if input_vector.y > 0 and bottom_step_ray.is_colliding() and bottom_step_ray.get_collision_normal().y == 0 and !top_step_ray.is_colliding():
+#	for i in range(bottom_step_rays.size()):
+#		var bottom_step_ray := bottom_step_rays[i]
+#		var top_step_ray := top_step_rays[i]
+#		if bottom_step_ray.is_colliding() and bottom_step_ray.get_collision_normal().y == 0 and !top_step_ray.is_colliding():
+#			return true
 	return false
 
 
 # Beim Start ausführen
 func _ready() -> void:
+	testy = $testy
 	if camera == null:
 		push_warning("player_first_person.gd: Keine Kamera im Inspektor festgelegt. Suche nach Camera3D...")
 		for child in get_children():
 			if child is Camera3D:
 				camera = child
 	
-	_setup_step_rays()
+	#_setup_step_rays()
+	_setup_step_ray()
 	
 	# Tastenzuordnung festlegen
 	_set_inputs()
@@ -136,26 +158,48 @@ func _process(delta) -> void:
 	if !mouse_captured:
 		return
 
+	# Springen
+	if Input.is_action_just_pressed("move_jump"):
+		is_jump = true
+
 	# Bewegungsrichtung bestimmen
 	input_vector = Input.get_vector("move_left", "move_right", "move_back", "move_foreward")
 	# Richtung Normalisieren, so dass in alle Richtungen die Geschwindigkeit konstant ist
 	direction = (global_transform.basis.x * input_vector.x + -global_transform.basis.z * input_vector.y).normalized()
+	#print("direction: ", direction)
+	
+	# Ray positionieren
+	step_ray.position.x =  input_vector.x * 0.7 # .x = direction.x 
+	step_ray.position.z =  -input_vector.y * 0.7
+	#step_ray.position.z = -direction.z 
 
+	testy.position.x =  input_vector.x * 0.7 # .x = direction.x 
+	testy.position.z =  -input_vector.y * 0.7
+	#testy.position.z = -direction.z 
+	
 
 func _physics_process(delta) -> void:
 	var treppe:bool = check_ray_collision()
-	if is_on_floor():
-		if input_vector != Vector2.ZERO and treppe:
-			# kraft, die nur etwas größer als schwerkraft ist um spieler anzuheben
-			velocity.y += 10 * delta #gravity * delta + 0.1
-
+	# Treppe
+	if input_vector != Vector2.ZERO and treppe:
+		# kraft, die nur etwas größer als schwerkraft ist um spieler anzuheben
+		#print("step_move: ", step_move)
+		velocity.y += step_move #+ gravity * delta + 0.1
+			
 		# Springen
-		if Input.is_action_just_pressed("move_jump"):
+		if is_jump:
 			velocity.y += jump_velocity
-	
+	elif is_on_floor():
+		# Springen
+		if is_jump:
+			velocity.y += jump_velocity
 	# Gravitation berücksichtigen
+	elif !treppe and step_move:
+		velocity = Vector3.ZERO
+		step_move = 0.0
 	elif !treppe:
 		velocity.y -= gravity * delta
+		is_jump = false
 	
 	var accel_to_use = accel if direction != Vector3.ZERO else deaccel
 	velocity = velocity.move_toward(Vector3(max_speed, velocity.y, max_speed) * Vector3(direction.x, 1, direction.z), accel_to_use)

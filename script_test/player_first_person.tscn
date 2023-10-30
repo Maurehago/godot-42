@@ -1,20 +1,21 @@
-[gd_scene load_steps=9 format=3 uid="uid://bcs7f3g2f4ad2"]
+[gd_scene load_steps=11 format=3 uid="uid://bcs7f3g2f4ad2"]
 
 [ext_resource type="ArrayMesh" uid="uid://bt5cmogbepv8j" path="res://script_test/testlevel.res" id="1_scguj"]
 [ext_resource type="Script" path="res://script_test/player_first_person.gd" id="2_mkenq"]
 
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sw0bw"]
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_b2ch6"]
 sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
 ground_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
 
-[sub_resource type="Sky" id="Sky_ts5om"]
-sky_material = SubResource("ProceduralSkyMaterial_sw0bw")
+[sub_resource type="Sky" id="Sky_x6iov"]
+sky_material = SubResource("ProceduralSkyMaterial_b2ch6")
 
-[sub_resource type="Environment" id="Environment_qsqbd"]
+[sub_resource type="Environment" id="Environment_crud1"]
 background_mode = 2
-sky = SubResource("Sky_ts5om")
+sky = SubResource("Sky_x6iov")
 tonemap_mode = 2
 ssao_enabled = true
+sdfgi_enabled = true
 glow_enabled = true
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6jpkx"]
@@ -27,14 +28,22 @@ data = PackedVector3Array(-12.1577, 0, 12.1577, 12.1577, 0, -12.1577, -12.1577, 
 radius = 0.3
 height = 1.8
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4kwwg"]
+albedo_color = Color(1, 0, 0, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_rc5og"]
+material = SubResource("StandardMaterial3D_4kwwg")
+radius = 0.1
+height = 0.2
+
 [node name="test_first_person" type="Node3D"]
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(-0.866023, -0.433016, 0.250001, 0, 0.499998, 0.866027, -0.500003, 0.749999, -0.43301, 0, 0, 0)
-shadow_enabled = true
-
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-environment = SubResource("Environment_qsqbd")
+environment = SubResource("Environment_crud1")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.850811, -0.415766, 0.32134, 0, 0.611527, 0.791223, -0.525472, -0.673182, 0.520294, 0, 0, 0)
+shadow_enabled = true
 
 [node name="Level" type="MeshInstance3D" parent="."]
 mesh = ExtResource("1_scguj")
@@ -48,7 +57,6 @@ shape = SubResource("ConcavePolygonShape3D_tndf2")
 [node name="CharacterBody3D" type="CharacterBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.394456, 0)
 script = ExtResource("2_mkenq")
-num_step_ray_directions = 5
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="CharacterBody3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.900239, 0)
@@ -56,3 +64,8 @@ shape = SubResource("CapsuleShape3D_s4t3h")
 
 [node name="Camera3D" type="Camera3D" parent="CharacterBody3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.49323, 0)
+
+[node name="testy" type="MeshInstance3D" parent="CharacterBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.394456, 0)
+mesh = SubResource("SphereMesh_rc5og")
+skeleton = NodePath("../..")
