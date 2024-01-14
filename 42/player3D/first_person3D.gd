@@ -31,7 +31,7 @@ var is_jump:bool = false
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 # test: nur zum Testen drinnen
-var testy:MeshInstance3D
+#var testy:MeshInstance3D
 
 # Tastatur Eingabe Festlegen
 func _set_inputs():
@@ -77,7 +77,7 @@ func _setup_step_ray() -> void:
 	step_ray.position.y = step_height + 0.01
 	
 	# test: nur zum Testen
-	testy.position.y = step_height + 0.01
+	#testy.position.y = step_height + 0.01
 	
 	step_ray.target_position = Vector3(0, -step_height, 0)
 	add_child(step_ray)
@@ -100,7 +100,7 @@ func check_ray_collision() -> bool:
 # Beim Start ausführen
 func _ready() -> void:
 	# test: nur zum Testen
-	testy = $testy
+	#testy = $testy
 	
 	# Auf vorhandene Kamera prüfen
 	camera = $Camera3D
@@ -155,8 +155,8 @@ func _process(_delta) -> void:
 	#step_ray.position.z = -direction.z 
 
 	# test: nur zum Testen
-	testy.position.x =  input_vector.x * 0.7 # .x = direction.x 
-	testy.position.z =  -input_vector.y * 0.7
+	#testy.position.x =  input_vector.x * 0.7 # .x = direction.x 
+	#testy.position.z =  -input_vector.y * 0.7
 	#testy.position.z = -direction.z 
 	
 
